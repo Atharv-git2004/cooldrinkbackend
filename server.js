@@ -38,7 +38,6 @@ if (process.env.NODE_ENV === "production") {
 // ==========================================
 // Middleware (CORS & Body Parser)
 // ==========================================
-// 🟢 CORS പ്രശ്നം പൂർണ്ണമായി പരിഹരിക്കാൻ Vercel URL-ഉം Localhost-ഉം നൽകുന്നു
 const allowedOrigins = ["http://localhost:5173", "https://cooldrinks-web-frontend.vercel.app"];
 
 if (process.env.FRONTEND_URL) {
@@ -54,7 +53,7 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // കുക്കികൾ കൈകാര്യം ചെയ്യാൻ
+app.use(cookieParser());
 
 // ==========================================
 // Session കോൺഫിഗറേഷൻ
@@ -110,14 +109,10 @@ app.get("/api/admin/stats", async (req, res) => {
   }
 });
 
-// Test Route
 app.get("/", (req, res) => {
   res.send("Arctic Sip API is Running Successfully...");
 });
 
-// ==========================================
-// Global Error Handler
-// ==========================================
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
