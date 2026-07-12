@@ -44,9 +44,16 @@ if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
 
+// CORS Error പൂർണ്ണമായി ഒഴിവാക്കാൻ function രീതിയിലുള്ള കോൺഫിഗറേഷൻ നൽകിയിരിക്കുന്നു
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );
@@ -66,7 +73,7 @@ app.use(
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 7,
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Days
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
   }),
@@ -79,7 +86,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ==========================================
-// Static Folder
+// Static Folder (Images ലോഡ് ചെയ്യാൻ)
 // ==========================================
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -92,32 +99,39 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/home", homeRoutes);
 
-// Admin Stats
+// ==========================================
+// Admin Stats (Dashboard-ന് വേണ്ടി)
+// ==========================================
 app.get("/api/admin/stats", async (req, res) => {
   try {
     const totalProducts = await Product.countDocuments();
     const totalUsers = await User.countDocuments();
 
-    res.json({
+    res.status(200).json({
       totalProducts,
       totalUsers,
       totalSales: 452000,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: err.message });
+    console.error("Admin Stats Fetch Error:", err);
+    res.status(500).json({ message: "Failed to fetch stats", error: err.message });
   }
 });
 
+// ==========================================
+// Base Route
+// ==========================================
 app.get("/", (req, res) => {
   res.send("Arctic Sip API is Running Successfully...");
 });
 
+// ==========================================
+// Global Error Handler
+// ==========================================
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error("Global Error:", err.stack);
   res.status(500).json({
-    message: "Internal Server Error",
-    error: err.message,
+    message: err.message || "Internal Server Error",
   });
 });
 

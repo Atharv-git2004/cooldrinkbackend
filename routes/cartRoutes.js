@@ -1,13 +1,17 @@
 import express from "express";
-import { getCart, addToCart } from "../controllers/cartController.js";
+import { getCart, addToCart, removeFromCart } from "../controllers/cartController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// കാർട്ട് ഡാറ്റ എടുക്കാൻ
+// 🟢 1. കാർട്ട് ഡാറ്റ എടുക്കാൻ (Get Cart)
 router.get("/", protect, getCart);
 
-// 🟢 കാർട്ടിലേക്ക് പുതിയ പ്രൊഡക്റ്റ് ആഡ് ചെയ്യാൻ ( "/add" എന്നത് മാറ്റി "/" ആക്കി )
+// 🟢 2. കാർട്ടിലേക്ക് പുതിയ പ്രൊഡക്റ്റ് ആഡ് ചെയ്യാൻ (Add to Cart)
 router.post("/", protect, addToCart);
+
+// 🟢 3. കാർട്ടിൽ നിന്ന് പ്രൊഡക്റ്റ് ഒഴിവാക്കാൻ (Remove from Cart)
+// ഫ്രണ്ട്-എൻഡിലെ Cart.jsx പേജിൽ നിന്ന് ഐറ്റംസ് ഡിലീറ്റ് ചെയ്യാൻ ഈ റൂട്ട് നിർബന്ധമാണ്
+router.delete("/:id", protect, removeFromCart);
 
 export default router;
