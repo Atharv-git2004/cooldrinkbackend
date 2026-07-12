@@ -1,6 +1,6 @@
 import express from "express";
 import { getCart, addToCart, removeFromCart } from "../controllers/cartController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect } from "../middleware/authMiddleware.js"; // നിങ്ങളുടെ auth middleware-ന്റെ പേര് protect എന്നാണെന്ന് ഉറപ്പുവരുത്തുക
 
 const router = express.Router();
 
@@ -11,7 +11,6 @@ router.get("/", protect, getCart);
 router.post("/", protect, addToCart);
 
 // 🟢 3. കാർട്ടിൽ നിന്ന് പ്രൊഡക്റ്റ് ഒഴിവാക്കാൻ (Remove from Cart)
-// ഫ്രണ്ട്-എൻഡിലെ Cart.jsx പേജിൽ നിന്ന് ഐറ്റംസ് ഡിലീറ്റ് ചെയ്യാൻ ഈ റൂട്ട് നിർബന്ധമാണ്
 router.delete("/:id", protect, removeFromCart);
 
 export default router;

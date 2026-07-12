@@ -1,6 +1,6 @@
 import Cart from "../models/Cart.js";
 
-// GET USER CART
+// 🟢 1. GET USER CART
 export const getCart = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -9,14 +9,18 @@ export const getCart = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized: User ID not found" });
     }
 
-    const cart = await Cart.findOne({ userId });
+    // 💡 ഇവിടെയാണ് നമ്മൾ മാറ്റം വരുത്തിയത്!
+    // .populate("items.productId") കൊടുക്കുമ്പോൾ പ്രൊഡക്റ്റിലെ ഒറിജിനൽ ഇമേജ് കാർട്ടിലേക്ക് വരും.
+    const cart = await Cart.findOne({ userId }).populate("items.productId");
+
     res.status(200).json(cart ? cart.items : []);
   } catch (error) {
+    console.error("Error fetching cart:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// ADD ITEM TO CART
+// 🟢 2. ADD ITEM TO CART
 export const addToCart = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -70,7 +74,7 @@ export const addToCart = async (req, res) => {
   }
 };
 
-// REMOVE ITEM FROM CART
+// 🟢 3. REMOVE ITEM FROM CART
 export const removeFromCart = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -92,6 +96,7 @@ export const removeFromCart = async (req, res) => {
     await cart.save();
     res.status(200).json(cart);
   } catch (error) {
+    console.error("Error removing from cart:", error);
     res.status(500).json({ message: error.message });
   }
 };
