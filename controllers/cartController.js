@@ -1,6 +1,6 @@
 import Cart from "../models/Cart.js";
 
-// 🟢 1. GET CART
+// GET USER CART
 export const getCart = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -16,7 +16,7 @@ export const getCart = async (req, res) => {
   }
 };
 
-// 🟢 2. ADD TO CART
+// ADD ITEM TO CART
 export const addToCart = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -25,13 +25,14 @@ export const addToCart = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized: User ID not found" });
     }
 
+    // Dynamic field extraction supporting both structured item objects or flat objects
     const productId = req.body.productId || req.body.item?.productId;
     const quantity = Number(req.body.quantity) || Number(req.body.item?.quantity) || 1;
     const price = req.body.price || req.body.item?.price;
     const title = req.body.title || req.body.item?.title;
 
-    // ഫ്രണ്ട്-എൻഡിൽ നിന്ന് bottleImage ആയോ img ആയോ വന്നാലും എടുക്കാൻ
-    const img = req.body.img || req.body.item?.img || req.body.bottleImage;
+    // Fallback checks for image property names
+    const img = req.body.img || req.body.item?.img || req.body.bottleImage || req.body.item?.bottleImage;
     const bgColor = req.body.bgColor || req.body.item?.bgColor;
 
     if (!productId) {
@@ -39,25 +40,24 @@ export const addToCart = async (req, res) => {
     }
 
     const cartItem = { productId, quantity, price, title, img, bgColor };
-
     let cart = await Cart.findOne({ userId });
 
     if (!cart) {
-      // കാർട്ട് ഇല്ലെങ്കിൽ പുതിയത് ഉണ്ടാക്കുന്നു
+      // Create a brand new cart if it doesn't exist
       cart = new Cart({ userId, items: [cartItem] });
     } else {
-      // കാർട്ട് ഉണ്ടെങ്കിൽ ഈ പ്രൊഡക്റ്റ് നേരത്തെ ഉണ്ടോ എന്ന് നോക്കുന്നു
+      // Check if product already exists inside the items array
       const itemIndex = cart.items.findIndex((i) => i.productId && i.productId.toString() === productId.toString());
 
       if (itemIndex > -1) {
-        // പ്രൊഡക്റ്റ് ഉണ്ടെങ്കിൽ ക്വാണ്ടിറ്റി കൂട്ടുന്നു
+        // Update item quantity
         cart.items[itemIndex].quantity += quantity;
 
-        // ഇമേജോ കളറോ മാറിയിട്ടുണ്ടെങ്കിൽ അതും അപ്ഡേറ്റ് ചെയ്യുന്നു
+        // Force overwrite missing fields if they changed or were missing
         if (img) cart.items[itemIndex].img = img;
         if (bgColor) cart.items[itemIndex].bgColor = bgColor;
       } else {
-        // പുതിയ പ്രൊഡക്റ്റ് ആണെങ്കിൽ അറേയിലേക്ക് പുഷ് ചെയ്യുന്നു
+        // Push brand new item to the array
         cart.items.push(cartItem);
       }
     }
@@ -70,7 +70,7 @@ export const addToCart = async (req, res) => {
   }
 };
 
-// 🟢 3. REMOVE FROM CART
+// REMOVE ITEM FROM CART
 export const removeFromCart = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -86,6 +86,7 @@ export const removeFromCart = async (req, res) => {
       return res.status(404).json({ message: "Cart not found" });
     }
 
+    // Filter out items using database unique _id or specific productId string matches
     cart.items = cart.items.filter((item) => item._id?.toString() !== id && item.productId?.toString() !== id);
 
     await cart.save();

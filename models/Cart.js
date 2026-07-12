@@ -10,7 +10,7 @@ const cartSchema = new mongoose.Schema(
     items: [
       {
         productId: {
-          type: Number, // Keep this as Number if your frontend sends numeric IDs
+          type: Number,
           required: true,
         },
         title: {
@@ -26,7 +26,6 @@ const cartSchema = new mongoose.Schema(
           default: 1,
           min: 1,
         },
-        // 🟢 ഇമേജും കളറും സേവ് ചെയ്യാൻ ഇത് കൂടി ചേർക്കണം
         img: {
           type: String,
           required: false,
@@ -34,11 +33,11 @@ const cartSchema = new mongoose.Schema(
         bgColor: {
           type: String,
           required: false,
-        }
+        },
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Cart", cartSchema);
