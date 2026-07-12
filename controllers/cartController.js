@@ -1,4 +1,5 @@
 import Cart from "../models/Cart.js";
+import Product from "../models/productModel.js";
 
 // 🟢 1. GET USER CART
 export const getCart = async (req, res) => {
@@ -9,8 +10,7 @@ export const getCart = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized: User ID not found" });
     }
 
-    // 💡 ഇവിടെയാണ് നമ്മൾ മാറ്റം വരുത്തിയത്!
-    // .populate("items.productId") കൊടുക്കുമ്പോൾ പ്രൊഡക്റ്റിലെ ഒറിജിനൽ ഇമേജ് കാർട്ടിലേക്ക് വരും.
+    // .populate("items.productId") വഴി പ്രൊഡക്റ്റിലെ ഒറിജിനൽ ഡാറ്റ മൊത്തമായി ഫ്രണ്ട്എൻഡിലേക്ക് കിട്ടും
     const cart = await Cart.findOne({ userId }).populate("items.productId");
 
     res.status(200).json(cart ? cart.items : []);
@@ -29,39 +29,46 @@ export const addToCart = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized: User ID not found" });
     }
 
-    // Dynamic field extraction supporting both structured item objects or flat objects
     const productId = req.body.productId || req.body.item?.productId;
     const quantity = Number(req.body.quantity) || Number(req.body.item?.quantity) || 1;
-    const price = req.body.price || req.body.item?.price;
-    const title = req.body.title || req.body.item?.title;
-
-    // Fallback checks for image property names
-    const img = req.body.img || req.body.item?.img || req.body.bottleImage || req.body.item?.bottleImage;
-    const bgColor = req.body.bgColor || req.body.item?.bgColor;
 
     if (!productId) {
       return res.status(400).json({ message: "Product ID is required" });
     }
 
+    // 💡 ഇവിടെയാണ് മാജിക്! ഡാറ്റാബേസിൽ നിന്ന് ഒറിജിനൽ പ്രൊഡക്റ്റ് ഡാറ്റ കണ്ടുപിടിക്കുന്നു
+    const productInfo = await Product.findById(productId);
+    if (!productInfo) {
+      return res.status(404).json({ message: "Product not found in database" });
+    }
+
+    // ഫ്രണ്ട്എൻഡ് തന്നില്ലെങ്കിലും ഡാറ്റാബേസിൽ ഉള്ള വിവരങ്ങൾ (img, price, title) ഇങ്ങോട്ട് എടുക്കും
+    const title = req.body.title || req.body.item?.title || productInfo.title;
+    const price = req.body.price || req.body.item?.price || productInfo.price;
+    const img = req.body.img || req.body.item?.img || req.body.bottleImage || req.body.item?.bottleImage || productInfo.img;
+    const bgColor = req.body.bgColor || req.body.item?.bgColor || productInfo.bgColor;
+
     const cartItem = { productId, quantity, price, title, img, bgColor };
     let cart = await Cart.findOne({ userId });
 
     if (!cart) {
-      // Create a brand new cart if it doesn't exist
+      // പുതിയ കാർട്ട് ഉണ്ടാക്കുന്നു
       cart = new Cart({ userId, items: [cartItem] });
     } else {
-      // Check if product already exists inside the items array
+      // പ്രൊഡക്റ്റ് നിലവിൽ കാർട്ടിൽ ഉണ്ടോ എന്ന് നോക്കുന്നു
       const itemIndex = cart.items.findIndex((i) => i.productId && i.productId.toString() === productId.toString());
 
       if (itemIndex > -1) {
-        // Update item quantity
+        // ക്വാണ്ടിറ്റി കൂട്ടുന്നു
         cart.items[itemIndex].quantity += quantity;
 
-        // Force overwrite missing fields if they changed or were missing
+        // ഫീൽഡുകൾ അപ്ഡേറ്റ് ചെയ്യുന്നു
+        cart.items[itemIndex].price = price;
+        cart.items[itemIndex].title = title;
         if (img) cart.items[itemIndex].img = img;
         if (bgColor) cart.items[itemIndex].bgColor = bgColor;
       } else {
-        // Push brand new item to the array
+        // പുതിയ ഐറ്റം കാർട്ടിലേക്ക് പുഷ് ചെയ്യുന്നു
         cart.items.push(cartItem);
       }
     }
@@ -90,7 +97,7 @@ export const removeFromCart = async (req, res) => {
       return res.status(404).json({ message: "Cart not found" });
     }
 
-    // Filter out items using database unique _id or specific productId string matches
+    // ഐറ്റം ഡിലീറ്റ് ചെയ്യാനുള്ള ഫിൽട്ടർ
     cart.items = cart.items.filter((item) => item._id?.toString() !== id && item.productId?.toString() !== id);
 
     await cart.save();
