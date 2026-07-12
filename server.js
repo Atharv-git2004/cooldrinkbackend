@@ -5,7 +5,7 @@ import session from "express-session";
 import passport from "passport";
 import path from "path";
 import { fileURLToPath } from "url";
-import cookieParser from "cookie-parser"; // 🔥 കുക്കികൾ റീഡ് ചെയ്യാൻ ഇത് ആവശ്യമാണ്
+import cookieParser from "cookie-parser";
 
 import connectDB from "./config/db.js";
 import "./config/passport.js";
@@ -32,22 +32,29 @@ const __dirname = path.dirname(__filename);
 // Proxy Configuration (Render-ൽ കുക്കികൾ വർക്ക് ചെയ്യാൻ)
 // ==========================================
 if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1); // 🔥 Render/Vercel പ്രൊഡക്ഷനിൽ സെഷൻ കുക്കികൾ സുരക്ഷിതമായി അയക്കാൻ ഇത് നിർബന്ധമാണ്
+  app.set("trust proxy", 1);
 }
 
 // ==========================================
 // Middleware (CORS & Body Parser)
 // ==========================================
+// 🟢 CORS പ്രശ്നം പൂർണ്ണമായി പരിഹരിക്കാൻ Vercel URL-ഉം Localhost-ഉം നൽകുന്നു
+const allowedOrigins = ["http://localhost:5173", "https://cooldrinks-web-frontend.vercel.app"];
+
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", // .env ഫയലിലെ വിൻഡോ ലിങ്ക് അല്ലെങ്കിൽ ലോക്കൽഹോസ്റ്റ്
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // 🔥 കുക്കികൾ കൈകാര്യം ചെയ്യാൻ മുകളിലായി ഇത് റൺ ചെയ്യണം
+app.use(cookieParser()); // കുക്കികൾ കൈകാര്യം ചെയ്യാൻ
 
 // ==========================================
 // Session കോൺഫിഗറേഷൻ
@@ -58,10 +65,10 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production", // പ്രൊഡക്ഷനിൽ HTTPS വഴി മാത്രം കുക്കി അയക്കുന്നു
+      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 ദിവസം വാലിഡിറ്റി
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // പ്രൊഡക്ഷനിൽ ക്രോസ്-ഡൊമൈൻ സപ്പോർട്ട് ചെയ്യാൻ
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
   }),
 );
@@ -122,5 +129,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
