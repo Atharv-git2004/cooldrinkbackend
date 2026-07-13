@@ -1,3 +1,4 @@
+import mongoose from "mongoose"; // 💡 ഇവിടെ mongoose ഇംപോർട്ട് ചെയ്തു
 import Cart from "../models/Cart.js";
 import Product from "../models/productModel.js";
 
@@ -10,7 +11,6 @@ export const getCart = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized: User ID not found" });
     }
 
-    // .populate("items.productId") വഴി പ്രൊഡക്റ്റിലെ ഒറിജിനൽ ഡാറ്റ മൊത്തമായി ഫ്രണ്ട്എൻഡിലേക്ക് കിട്ടും
     const cart = await Cart.findOne({ userId }).populate("items.productId");
 
     res.status(200).json(cart ? cart.items : []);
@@ -20,7 +20,7 @@ export const getCart = async (req, res) => {
   }
 };
 
-// 🟢 2. ADD ITEM TO CART
+// 🟢 2. ADD ITEM TO CART (Modified to prevent 500 crash)
 export const addToCart = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -36,19 +36,23 @@ export const addToCart = async (req, res) => {
       return res.status(400).json({ message: "Product ID is required" });
     }
 
-    // 💡 ഇവിടെയാണ് മാജിക്! ഡാറ്റാബേസിൽ നിന്ന് ഒറിജിനൽ പ്രൊഡക്റ്റ് ഡാറ്റ കണ്ടുപിടിക്കുന്നു
-    const productInfo = await Product.findById(productId);
-    if (!productInfo) {
-      return res.status(404).json({ message: "Product not found in database" });
+    // 💡 500 ക്രാഷ് ഒഴിവാക്കാനുള്ള മാജിക് ഫിക്സ്:
+    // വരുന്നത് വാലിഡ് ObjectId ആണെങ്കിൽ മാത്രം ഡാറ്റാബേസിൽ തപ്പുക.
+    // നമ്പർ ഐഡി ആണെങ്കിൽ (3, 11 പോലെ) ക്രാഷ് ആവാതെ മുന്നോട്ട് പോകും.
+    let productInfo = null;
+    if (mongoose.Types.ObjectId.isValid(productId)) {
+      productInfo = await Product.findById(productId);
     }
 
-    // ഫ്രണ്ട്എൻഡ് തന്നില്ലെങ്കിലും ഡാറ്റാബേസിൽ ഉള്ള വിവരങ്ങൾ (img, price, title) ഇങ്ങോട്ട് എടുക്കും
-    const title = req.body.title || req.body.item?.title || productInfo.title;
-    const price = req.body.price || req.body.item?.price || productInfo.price;
-    const img = req.body.img || req.body.item?.img || req.body.bottleImage || req.body.item?.bottleImage || productInfo.img;
-    const bgColor = req.body.bgColor || req.body.item?.bgColor || productInfo.bgColor;
+    // ഫ്രണ്ട്എൻഡ് തന്നില്ലെങ്കിലും ഡാറ്റാബേസിൽ ഉള്ള വിവരങ്ങൾ (img, price, title) ഇങ്ങോട്ട് എടുക്കും.
+    // ഡാറ്റാബേസിൽ ഇല്ലാത്ത ഹാർഡ്കോഡ് പ്രൊഡക്റ്റ് ആണെങ്കിൽ ഫ്രണ്ട്എൻഡ് തന്ന ഡാറ്റ നേരിട്ട് ഉപയോഗിക്കും.
+    const title = req.body.title || req.body.item?.title || productInfo?.title || "Soft Drink";
+    const price = req.body.price || req.body.item?.price || productInfo?.price || 0;
+    const img =
+      req.body.img || req.body.item?.img || req.body.bottleImage || req.body.item?.bottleImage || productInfo?.img || "";
+    const bgColor = req.body.bgColor || req.body.item?.bgColor || productInfo?.bgColor || "";
 
-    const cartItem = { productId, quantity, price, title, img, bgColor };
+    const cartItem = { productId: productId.toString(), quantity, price, title, img, bgColor };
     let cart = await Cart.findOne({ userId });
 
     if (!cart) {
