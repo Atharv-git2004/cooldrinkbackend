@@ -10,9 +10,8 @@ const cartSchema = new mongoose.Schema(
     items: [
       {
         productId: {
-          // Number മാറ്റി ObjectId ആക്കി, ഒപ്പം Product മോഡൽ റെഫറൻസ് ചെയ്തു
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Product", 
+          // 💡 ഇവിടെയാണ് മാറ്റം വരുത്തിയത്: ObjectId ഒഴിവാക്കി String ആക്കി
+          type: String,
           required: true,
         },
         title: {
@@ -39,7 +38,7 @@ const cartSchema = new mongoose.Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Cart", cartSchema);
