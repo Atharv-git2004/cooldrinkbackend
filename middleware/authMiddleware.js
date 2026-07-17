@@ -20,8 +20,9 @@ export const protect = async (req, res, next) => {
       }
     }
 
-    if (!token) {
-      return res.status(401).json({ success: false, message: "Not authorized, no token provided" });
+    // 💡 ടോക്കൺ ഇല്ലെങ്കിലോ അല്ലെങ്കിൽ ഫ്രണ്ട്-എൻഡിൽ നിന്ന് 'undefined', 'null' എന്ന് സ്ട്രിങ് ആയി വന്നാലോ തടയുന്നു
+    if (!token || token === "undefined" || token === "null") {
+      return res.status(401).json({ success: false, message: "Not authorized, no valid token provided" });
     }
 
     // ടോക്കൺ വെരിഫൈ ചെയ്യുന്നു
