@@ -1,44 +1,18 @@
 import mongoose from "mongoose";
 
-const cartSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    items: [
-      {
-        productId: {
-          // 💡 ഇവിടെയാണ് മാറ്റം വരുത്തിയത്: ObjectId ഒഴിവാക്കി String ആക്കി
-          type: String,
-          required: true,
-        },
-        title: {
-          type: String,
-          required: true,
-        },
-        price: {
-          type: Number,
-          required: true,
-        },
-        quantity: {
-          type: Number,
-          default: 1,
-          min: 1,
-        },
-        img: {
-          type: String,
-          required: false,
-        },
-        bgColor: {
-          type: String,
-          required: false,
-        },
-      },
-    ],
-  },
-  { timestamps: true },
-);
+// models/Cart.js ലെ items അറേയുടെ ഉള്ളിൽ img ഫീൽഡ് ഉണ്ടോ എന്ന് നോക്കുക
+const cartSchema = new mongoose.Schema({
+  userId: { type: String, required: true },
+  items: [
+    {
+      productId: { type: String, required: true },
+      quantity: { type: Number, default: 1 },
+      price: { type: Number, required: true },
+      title: { type: String },
+      img: { type: String }, // 🔥 ഈ വരി നിർബന്ധമായും ഉണ്ടായിരിക്കണം!
+      bgColor: { type: String }
+    }
+  ]
+});
 
 export default mongoose.model("Cart", cartSchema);

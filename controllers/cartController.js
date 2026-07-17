@@ -40,7 +40,9 @@ export const addToCart = async (req, res) => {
     // വരുന്നത് വാലിഡ് ObjectId ആണെങ്കിൽ മാത്രം ഡാറ്റാബേസിൽ തപ്പുക.
     // നമ്പർ ഐഡി ആണെങ്കിൽ (3, 11 പോലെ) ക്രാഷ് ആവാതെ മുന്നോട്ട് പോകും.
     let productInfo = null;
-    if (mongoose.Types.ObjectId.isValid(productId)) {
+
+    // Check if it's a valid 24-character hex string (Standard MongoDB ObjectId format)
+    if (mongoose.Types.ObjectId.isValid(productId) && String(productId).length === 24) {
       productInfo = await Product.findById(productId);
     }
 
