@@ -29,22 +29,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ==========================================
-// Proxy Configuration (Render-ൽ കുക്കികൾ വർക്ക് ചെയ്യാൻ)
+// 1. Proxy Configuration (CRITICAL FOR RENDER)
 // ==========================================
-if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1);
-}
+// Render Load Balancer-ന് പിന്നിലായതിനാൽ ഇത് നിർബന്ധമാണ്.
+// ഇത് എപ്പോഴും പ്രവർത്തിക്കുന്ന രീതിയിൽ മാറ്റിയിട്ടുണ്ട്.
+app.set("trust proxy", 1);
 
 // ==========================================
-// Middleware (CORS & Body Parser)
+// 2. Middleware (CORS & Body Parser)
 // ==========================================
 const allowedOrigins = ["http://localhost:5173", "https://cooldrinks-web-frontend.vercel.app"];
 
+// Environment വേരിയബിളിൽ നിന്ന് ട്രെയിലിംഗ് സ്ലാഷ് (/) ഉണ്ടെങ്കിൽ ഒഴിവാക്കുന്നു
 if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(process.env.FRONTEND_URL);
+  allowedOrigins.push(process.env.FRONTEND_URL.replace(/\/$/, ""));
 }
 
-// CORS Error പൂർണ്ണമായി ഒഴിവാക്കാൻ function രീതിയിലുള്ള കോൺഫിഗറേഷൻ നൽകിയിരിക്കുന്നു
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -54,7 +54,7 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true,
+    credentials: true, // കുക്കികൾ അലൗ ചെയ്യാൻ നിർബന്ധം
   }),
 );
 
@@ -63,35 +63,37 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ==========================================
-// Session കോൺഫിഗറേഷൻ
+// 3. Session Configuration (Fixed for Vercel -> Render)
 // ==========================================
+const isProduction = process.env.NODE_ENV === "production";
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "my_super_secret_arctic_boost_key",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction, // പ്രൊഡക്ഷനിൽ True ആയിരിക്കണം (HTTPS)
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Days
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: isProduction ? "none" : "lax", // Cross-site കുക്കികൾക്ക് പ്രൊഡക്ഷനിൽ 'none' നിർബന്ധമാണ്
     },
   }),
 );
 
 // ==========================================
-// Passport Initialize (Google Auth)
+// 4. Passport Initialize (Google Auth)
 // ==========================================
 app.use(passport.initialize());
 app.use(passport.session());
 
 // ==========================================
-// Static Folder (Images ലോഡ് ചെയ്യാൻ)
+// 5. Static Folder (Images ലോഡ് ചെയ്യാൻ)
 // ==========================================
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ==========================================
-// API Routes
+// 6. API Routes
 // ==========================================
 app.use("/api/users", userRoutes);
 app.use("/api/cart", cartRoutes);
@@ -100,7 +102,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/home", homeRoutes);
 
 // ==========================================
-// Admin Stats (Dashboard-ന് വേണ്ടി)
+// Admin Stats
 // ==========================================
 app.get("/api/admin/stats", async (req, res) => {
   try {
