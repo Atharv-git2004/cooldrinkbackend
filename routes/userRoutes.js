@@ -1,6 +1,7 @@
 import express from "express";
 import passport from "passport";
 import { registerUser, loginUser } from "../controllers/userController.js";
+import { protect } from "../middleware/authMiddleware.js"; // 🟢 ഇത് ഇംപോർട്ട് ചെയ്തു
 
 const router = express.Router();
 
@@ -26,7 +27,8 @@ router.get(
 );
 
 // 3. ലോഗിൻ ചെയ്ത യൂസറുടെ ഡാറ്റ ഫ്രണ്ടെൻഡിന് കൊടുക്കാൻ
-router.get("/me", (req, res) => {
+// 🟢 ഇവിടെ 'protect' നൽകി. ഇതോടെ ടോക്കൺ വെരിഫൈ ചെയ്ത് മാത്രം ഡാറ്റ നൽകും.
+router.get("/me", protect, (req, res) => {
   if (req.user) {
     res.status(200).json({ success: true, user: req.user });
   } else {

@@ -25,7 +25,7 @@ export const registerUser = async (req, res) => {
     const user = await User.create({
       username,
       email,
-      password, // Production-ൽ bcrypt ഉപയോഗിച്ച് ഹാഷ് ചെയ്യുക
+      password, // Production-ൽ bcrypt ഉപയോഗിച്ച് ഹാഷ് ചെയ്യണം
       image: image || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
       role: "user",
     });
@@ -34,7 +34,7 @@ export const registerUser = async (req, res) => {
       res.status(201).json({
         success: true,
         message: "അക്കൗണ്ട് വിജയകരമായി ക്രിയേറ്റ് ചെയ്തു!",
-        token: generateToken(user._id), // രജിസ്റ്റർ ചെയ്യുമ്പോൾ ടോക്കൺ കൊടുക്കുന്നു
+        token: generateToken(user._id),
         user: { _id: user._id, username: user.username, email: user.email, image: user.image, role: user.role },
       });
     }
@@ -61,7 +61,7 @@ export const loginUser = async (req, res) => {
       res.status(200).json({
         success: true,
         message: "Login Successful",
-        token: generateToken(user._id), // 🟢 ഇവിടെയാണ് പ്രധാന മാറ്റം: ലോഗിൻ ചെയ്യുമ്പോൾ ടോക്കൺ കൊടുക്കുന്നു
+        token: generateToken(user._id),
         user: { _id: user._id, username: user.username, email: user.email, image: user.image, role: user.role },
       });
     } else {
