@@ -5,7 +5,7 @@ import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// മാനുവൽ രജിസ്ട്രേഷൻ & ലോഗിൻ
+// സാധാരണ ലോഗിൻ & രജിസ്ട്രേഷൻ
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 
@@ -13,33 +13,36 @@ router.post("/login", loginUser);
 // ഗൂഗിൾ ലോഗിൻ റൂട്ടുകൾ
 // ==========================================
 
-// 1. ഗൂഗിൾ ലോഗിൻ പേജിലേക്ക് പോകാൻ
+// 1. ഗൂഗിൾ ലോഗിൻ ആരംഭിക്കാൻ
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-// 2. ഗൂഗിൾ വെരിഫിക്കേഷൻ കഴിഞ്ഞു തിരികെ വരുന്ന റൂട്ട്
+// 2. ഗൂഗിൾ ലോഗിൻ പൂർത്തിയായി തിരികെ വരുന്ന റൂട്ട് (Callback)
 router.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: process.env.FRONTEND_URL + "/login" }),
+  passport.authenticate("google", {
+    // ലോഗിൻ പരാജയപ്പെട്ടാൽ Vercel ലെ ലോഗിൻ പേജിലേക്ക് പോകും
+    failureRedirect: `${process.env.FRONTEND_URL}/login`,
+  }),
   (req, res) => {
-    // ലോഗിൻ വിജയകരമായാൽ Vercel ഫ്രണ്ടെൻഡിലേക്ക് റീഡയറക്ട് ചെയ്യുന്നു
-    res.redirect(process.env.FRONTEND_URL + "/");
+    // ലോഗിൻ വിജയകരമായാൽ Vercel ഫ്രണ്ടെൻഡ് ഹോം പേജിലേക്ക് റീഡയറക്ട് ചെയ്യും
+    res.redirect(`${process.env.FRONTEND_URL}/`);
   },
 );
 
-// 3. ലോഗിൻ ചെയ്ത യൂസറുടെ ഡാറ്റ ഫ്രണ്ടെൻഡിന് കൊടുക്കാൻ
+// യൂസർ വിവരങ്ങൾ എടുക്കാൻ
 router.get("/me", protect, (req, res) => {
   if (req.user) {
     res.status(200).json({ success: true, user: req.user });
   } else {
-    res.status(401).json({ success: false, message: "ലോഗിൻ ചെയ്തിട്ടില്ല" });
+    res.status(401).json({ success: false, message: "Not authenticated" });
   }
 });
 
-// 4. ലോഗൗട്ട് ചെയ്യാൻ
+// ലോഗൗട്ട് ചെയ്യാൻ
 router.get("/logout", (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
-    res.status(200).json({ success: true, message: "ലോഗൗട്ട് ചെയ്തു" });
+    res.status(200).json({ success: true, message: "Logged out successfully" });
   });
 });
 
