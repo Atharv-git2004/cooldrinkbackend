@@ -15,18 +15,15 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // ഇമെയിൽ വെച്ച് യൂസർ ഉണ്ടോ എന്ന് നോക്കുന്നു
         let user = await User.findOne({ email: profile.emails[0].value });
 
         if (user) {
-          // യൂസർ ഉണ്ട്, പക്ഷെ googleId ഇല്ലെങ്കിൽ അത് അപ്ഡേറ്റ് ചെയ്യുന്നു
           if (!user.googleId) {
             user.googleId = profile.id;
             await user.save();
           }
           return done(null, user);
         } else {
-          // പുതിയ യൂസറെ ക്രിയേറ്റ് ചെയ്യുന്നു
           const newUser = await User.create({
             googleId: profile.id,
             username: profile.displayName,
@@ -43,12 +40,10 @@ passport.use(
   ),
 );
 
-// Session-ലേക്ക് യൂസറെ സേവ് ചെയ്യാൻ
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-// Session-ൽ നിന്ന് യൂസറെ എടുക്കാൻ
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
