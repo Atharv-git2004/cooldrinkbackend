@@ -11,6 +11,7 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      proxy: true, // Render-ൽ ഹോസ്റ്റ് ചെയ്യുമ്പോൾ നിർബന്ധമായും വേണ്ടത്
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
