@@ -1,13 +1,13 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import session from "express-session";
 import passport from "passport";
 import path from "path";
 import { fileURLToPath } from "url";
-import cookieParser from "cookie-parser";
 
 import connectDB from "./config/db.js";
+
+// 🟢 ഗൂഗിൾ ലോഗിൻ സ്ട്രാറ്റജി ഇവിടെ ലോഡ് ചെയ്യുന്നു (പാത്ത് കൃത്യമാണെന്ന് ഉറപ്പാക്കുക!)
 import "./config/passport.js";
 
 // Routes
@@ -29,10 +29,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ==========================================
-// 1. Proxy Configuration (CRITICAL FOR RENDER)
+// 1. Proxy Configuration
 // ==========================================
 // Render Load Balancer-ന് പിന്നിലായതിനാൽ ഇത് നിർബന്ധമാണ്.
-// ഇത് എപ്പോഴും പ്രവർത്തിക്കുന്ന രീതിയിൽ മാറ്റിയിട്ടുണ്ട്.
 app.set("trust proxy", 1);
 
 // ==========================================
@@ -40,7 +39,6 @@ app.set("trust proxy", 1);
 // ==========================================
 const allowedOrigins = ["http://localhost:5173", "https://cooldrinks-web-frontend.vercel.app"];
 
-// Environment വേരിയബിളിൽ നിന്ന് ട്രെയിലിംഗ് സ്ലാഷ് (/) ഉണ്ടെങ്കിൽ ഒഴിവാക്കുന്നു
 if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL.replace(/\/$/, ""));
 }
@@ -54,46 +52,26 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // കുക്കികൾ അലൗ ചെയ്യാൻ നിർബന്ധം
+    credentials: true,
   }),
 );
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
 // ==========================================
-// 3. Session Configuration (Fixed for Vercel -> Render)
+// 3. Passport Initialize (Google Auth)
 // ==========================================
-const isProduction = process.env.NODE_ENV === "production";
-
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "my_super_secret_arctic_boost_key",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: isProduction, // പ്രൊഡക്ഷനിൽ True ആയിരിക്കണം (HTTPS)
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 Days
-      sameSite: isProduction ? "none" : "lax", // Cross-site കുക്കികൾക്ക് പ്രൊഡക്ഷനിൽ 'none' നിർബന്ധമാണ്
-    },
-  }),
-);
-
-// ==========================================
-// 4. Passport Initialize (Google Auth)
-// ==========================================
+// 🟢 JWT ഉപയോഗിക്കുന്നതിനാൽ ഇവിടെ express-session ആവശ്യമില്ല!
 app.use(passport.initialize());
-app.use(passport.session());
 
 // ==========================================
-// 5. Static Folder (Images ലോഡ് ചെയ്യാൻ)
+// 4. Static Folder (Images ലോഡ് ചെയ്യാൻ)
 // ==========================================
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ==========================================
-// 6. API Routes
+// 5. API Routes
 // ==========================================
 app.use("/api/users", userRoutes);
 app.use("/api/cart", cartRoutes);
@@ -112,7 +90,7 @@ app.get("/api/admin/stats", async (req, res) => {
     res.status(200).json({
       totalProducts,
       totalUsers,
-      totalSales: 452000,
+      totalSales: 452000, // Static for now
     });
   } catch (err) {
     console.error("Admin Stats Fetch Error:", err);
